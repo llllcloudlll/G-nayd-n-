@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>zeloma</title>
+    <style>
+        :root {
+            /* Gerçekçi atmosfer için ana şafak renkleri */
+            --sky-1: #060913; /* Derin gece mavisi */
+            --sky-2: #161b33;
+            --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            /* Tarayıcının varsayılan kaydırma/yenileme hareketlerini tamamen ezmek için */
+            touch-action: none; 
+        }
+        body {
+            background: linear-gradient(to bottom, var(--sky-1), var(--sky-2));
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-family);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Atmosferik Sis ve Parıldayan Yıldız Efektleri (Gerçekçilik için) */
+        .atmosphere-glow {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 80%, rgba(255, 94, 0, 0), rgba(0,0,0,0));
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.1s linear;
+        }
+
+        /* 1. Aşama: Güneş Ekranı */
+        #scene-sunrise {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 25vh;
+            z-index: 2;
+        }
+
+        #sun {
+            width: 125px;
+            height: 125px;
+            background: radial-gradient(circle, #ffffff 0%, #ffdf00 30%, #ffa500 70%, #ff4500 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 60px rgba(255, 165, 0, 0.6), 0 0 120px rgba(255, 69, 0, 0.4);
+            cursor: grab;
+            position: relative;
+            z-index: 2;
+        }
+        #sun:active {
+            cursor: grabbing;
+        }
+
+        /* 2. Aşama: Kazı Kazan Ekranı */
+        #scene-scratch {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.9);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #scene-scratch.active {
+            opacity: 1;
+            pointer-events: all;
+            z-index: 3;
+            transform: scale(1);
+        }
+        #secret-message {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff 0%, #fffbf5 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            font-size: 19px;
+            color: #3d2f23;
+            font-weight: bold;
+            line-height: 1.6;
+        }
+        #scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 24px;
+            cursor: crosshair;
+        }
+
+        /* Rehber Panel ve Karpuz */
+        #guide-panel {
+            position: absolute;
+            bottom: 40px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        #speech-bubble {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 15px;
+            color: #222;
+            max-width: 80%;
+            width: 290px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-bottom: 12px;
+            position: relative;
+            font-weight: 600;
+            line-height: 1.4;
+            transition: opacity 0.3s ease;
+        }
+        #speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent;
+        }
+        #watermelon {
+            font-size: 55px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
+            animation: float 2.5s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="atmosphere-glow" id="glow"></div>
+
+    <!-- GÜNEŞ EKRANI -->
+    <div id="scene-sunrise">
+        <div id="sun"></div>
+    </div>
+
+    <!-- KAZI KAZAN EKRANI (Tam ve Eksiksiz) -->
+    <div id="scene-scratch">
+        <div id="secret-message">Günaydın Zelomm <br><br>bu gün farklılık olsun istedim emek verilerek yapılan şeyler daha değerlidir seni mutlu etmeyi seviyorum günün en az gülüşün kadar güzel geçsin</div>
+        <canvas id="scratch-canvas"></canvas>
+    </div>
+
+    <!-- REHBER KARPUZ (Sabit Korundu) -->
+    <div id="guide-panel">
+        <div id="speech-bubble">zelalllll sabah oldu... şu an iki Güneş birbirine bakıyor biri dünyayı biri de dünyamı ısıtıyor , güneşi yukarı kaydırarak asıl sürprizimi görebilirsin</div>
+        <div id="watermelon">🍉</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sun = document.getElementById("sun");
+            const sceneSunrise = document.getElementById("scene-sunrise");
+            const sceneScratch = document.getElementById("scene-scratch");
+            const canvas = document.getElementById("scratch-canvas");
+            const speechBubble = document.getElementById("speech-bubble");
+            const glow = document.getElementById("glow");
+            const ctx = canvas.getContext("2d");
+
+            let isDragging = false;
+            let startY = 0;
+            let currentTransformY = 0;
+            const screenHeight = window.innerHeight;
+            const triggerDistance = screenHeight * 0.45; 
+
+            // --- GÜNEŞ HAREKET MEKANİZMASI (DOKUNMATİK KİLİTLENMEYİ ÖNLEYEN YAPI) ---
+            const onStart = (e) => {
+                isDragging = true;
+                startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                sun.style.transition = 'none';
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                
+                const currentClientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                const deltaY = startY - currentClientY;
+
+                if (deltaY > 0) { 
+                    currentTransformY = -deltaY;
+                    sun.style.transform = `translateY(${currentTransformY}px)`;
+
+                    // Gerçekçi Atmosferik Şafak Simülasyonu
+                    let pct = Math.min(deltaY / triggerDistance, 1);
+                    
+                    // Gökyüzü üst ve alt katman yumuşak geçiş hesaplamaları
+                    let r = Math.round(6 + (210 * pct));
+                    let g = Math.round(9 + (120 * pct));
+                    let b = Math.round(19 + (70 * pct));
+                    
+                    document.body.style.background = `linear-gradient(to bottom, rgb(${r}, ${g}, ${b}), rgb(${Math.round(22+(210*pct))}, ${Math.round(27+(70*pct))}, ${Math.round(51-(10*pct))}))`;
+                    glow.style.background = `radial-gradient(circle at 50% 90%, rgba(255, 120, 30, ${pct * 0.8}), rgba(255, 65, 0, 0) 70%)`;
+
+                    if (deltaY >= triggerDistance) {
+                        endDragProcess(true);
+                    }
+                }
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                endDragProcess(false);
+            };
+
+            const endDragProcess = (isComplete) => {
+                isDragging = false;
+                if (isComplete) {
+                    sun.style.transition = 'transform 0.5s ease-out, opacity 0.3s';
+                    sun.style.transform = `translateY(-${screenHeight}px)`;
+                    sun.style.opacity = '0';
+                    
+                    setTimeout(initScratchPhase, 400);
+                } else {
+                    sun.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                    sun.style.transform = 'translateY(0px)';
+                    document.body.style.background = 'linear-gradient(to bottom, var(--sky-1), var(--sky-2))';
+                    glow.style.background = 'none';
+                }
+            };
+
+            // Global event tanımlamaları ile kaydırma kaçırmalarını engelleme
+            sun.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+
+            sun.addEventListener('touchstart', onStart);
+            window.addEventListener('touchmove', onMove);
+            window.addEventListener('touchend', onEnd);
+
+
+            // --- KAZI KAZAN SİSTEMİ (EKSİKSİZ CODESET) ---
+            const initScratchPhase = () => {
+                sceneSunrise.classList.add('hidden');
+                
+                // Gün doğumu sonrası romantik pembe/mavi gökyüzü kırılması
+                document.body.style.background = 'linear-gradient(to bottom, #ff9a9e 0%, #fecfef 100%)';
+                glow.style.background = 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.4), transparent)';
+                
+                speechBubble.textContent = "Harika! Güneş doğdu. Şimdi kartın üzerindeki buğuyu parmağınla tamamen sil bakalım.";
+                sceneScratch.classList.add('active');
+                
+                // Canvas netlik ve boyut senkronizasyonu
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
+                // Estetik buzlu şafak gümüşü kaplaması
+                let silverGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                silverGrad.addColorStop(0, '#cfd8dc');
+                silverGrad.addColorStop(0.5, '#eceff1');
+                silverGrad.addColorStop(1, '#b0bec5');
+                
+                ctx.fillStyle = silverGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Tipografi ayarları
+                ctx.font = "bold 19px sans-serif";
+                ctx.fillStyle = "#607d8b";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Burayı Kazı ✨", canvas.width / 2, canvas.height / 2);
+            };
+
+            let drawing = false;
+
+            const startScratch = (e) => {
+                drawing = true;
+                scratchAction(e);
+            };
+
+            const scratchAction = (e) => {
+                if (!drawing) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+
+                // Kazıma fırçası maskelemesi
+                ctx.globalCompositeOperation = "destination-out";
+                ctx.beginPath();
+                ctx.arc(x, y, 25, 0, Math.PI * 2);
+                ctx.fill();
+
+                checkReveal();
+            };
+
+            const stopScratch = () => { drawing = false; };
+
+            const checkReveal = () => {
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let cleared = 0;
+                for (let i = 3; i < imgData.data.length; i += 4) {
+                    if (imgData.data[i] === 0) cleared++;
+                }
+                
+                // Alanın %50'den fazlası temizlendiğinde kartı tamamen kaldır
+                if (cleared / (imgData.data.length / 4) > 0.50) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    speechBubble.textContent = "Günaydın! Umarım bu küçük sürpriz yüzünü güldürebilmiştir. 🍉";
+                    canvas.style.pointerEvents = 'none';
+                }
+            };
+
+            canvas.addEventListener('mousedown', startStartch = startScratch);
+            window.addEventListener('mousemove', scratchAction);
+            window.addEventListener('mouseup', stopScratch);
+
+            canvas.addEventListener('touchstart', startScratch);
+            window.addEventListener('touchmove', scratchAction);
+            window.addEventListener('touchend', stopScratch);
+        });
+    </script>
+</body>
+</html>
