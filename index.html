@@ -6,8 +6,7 @@
     <title>zeloma</title>
     <style>
         :root {
-            /* Gerçekçi atmosfer için ana afak renkleri */
-            --sky-1: #060913; /* Derin gece mavisi */
+            --sky-1: #060913;
             --sky-2: #161b33;
             --font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
         }
@@ -17,7 +16,6 @@
             -webkit-user-select: none;
             margin: 0;
             padding: 0;
-            /* Taraycnn varsaylan kaydrma/yenileme hareketlerini tamamen ezmek için */
             touch-action: none; 
         }
         body {
@@ -33,7 +31,6 @@
             position: relative;
         }
 
-        /* Atmosferik Sis ve Parldayan Yldz Efektleri (Gerçekçilik için) */
         .atmosphere-glow {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -43,16 +40,16 @@
             transition: background 0.1s linear;
         }
 
-        /* 1. Aama: Güne Ekran */
         #scene-sunrise {
             position: absolute;
             width: 100%;
             height: 100%;
             display: flex;
-            align-items: flex-end;
+            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            padding-bottom: 25vh;
-            z-index: 2;
+            padding-bottom: 10vh;
+            z-index: 5;
         }
 
         #sun {
@@ -63,13 +60,13 @@
             box-shadow: 0 0 60px rgba(255, 165, 0, 0.6), 0 0 120px rgba(255, 69, 0, 0.4);
             cursor: grab;
             position: relative;
-            z-index: 2;
+            z-index: 6;
+            margin-top: 20px;
         }
         #sun:active {
             cursor: grabbing;
         }
 
-        /* 2. Aama: Kaz Kazan Ekran */
         #scene-scratch {
             position: absolute;
             width: 320px;
@@ -86,7 +83,7 @@
         #scene-scratch.active {
             opacity: 1;
             pointer-events: all;
-            z-index: 3;
+            z-index: 10;
             transform: scale(1);
         }
         #secret-message {
@@ -116,15 +113,14 @@
             cursor: crosshair;
         }
 
-        /* Rehber Panel ve Karpuz */
         #guide-panel {
-            position: absolute;
-            bottom: 40px;
-            z-index: 10;
+            position: relative;
+            z-index: 7;
             display: flex;
             flex-direction: column;
             align-items: center;
             width: 100%;
+            margin-bottom: 20px;
         }
         #speech-bubble {
             background: rgba(255, 255, 255, 0.95);
@@ -137,11 +133,10 @@
             width: 290px;
             text-align: center;
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             position: relative;
             font-weight: 600;
             line-height: 1.4;
-            transition: opacity 0.3s ease;
         }
         #speech-bubble::after {
             content: '';
@@ -155,7 +150,6 @@
         }
         #watermelon {
             font-size: 55px;
-            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.2));
             animation: float 2.5s infinite ease-in-out;
         }
 
@@ -170,21 +164,17 @@
 
     <div class="atmosphere-glow" id="glow"></div>
 
-    <!-- GÜNE EKRANI -->
     <div id="scene-sunrise">
+        <div id="guide-panel">
+            <div id="speech-bubble">zelalllll sabah oldu... ÅŸu an iki GÃ¼neÅŸ birbirine bakÄ±yor biri dÃ¼nyayÄ± biri de dÃ¼nyamÄ± Ä±sÄ±tÄ±yor, gÃ¼neÅŸi yukarÄ± kaydÄ±rarak asÄ±l sÃ¼rprizimi gÃ¶rebilirsin</div>
+            <div id="watermelon">ğŸ‰</div>
+        </div>
         <div id="sun"></div>
     </div>
 
-    <!-- KAZI KAZAN EKRANI (Tam ve Eksiksiz) -->
     <div id="scene-scratch">
-        <div id="secret-message">Günaydn Zelomm <br><br>bu gün farkllk olsun istedim emek verilerek yaplan eyler daha deerlidir seni mutlu etmeyi seviyorum günün en az gülüün kadar güzel geçsin</div>
+        <div id="secret-message">GÃ¼naydÄ±n Zelomm <br><br>bu gÃ¼n farklÄ±lÄ±k olsun istedim emek verilerek yapÄ±lan ÅŸeyler daha deÄŸerlidir seni mutlu etmeyi seviyorum gÃ¼nÃ¼n en az gÃ¼lÃ¼ÅŸÃ¼n kadar gÃ¼zel geÃ§sin</div>
         <canvas id="scratch-canvas"></canvas>
-    </div>
-
-    <!-- REHBER KARPUZ (Sabit Korundu) -->
-    <div id="guide-panel">
-        <div id="speech-bubble">zelalllll sabah oldu... u an iki Güne birbirine bakyor biri dünyay biri de dünyam styor , günei yukar kaydrarak asl sürprizimi görebilirsin</div>
-        <div id="watermelon"></div>
     </div>
 
     <script>
@@ -198,161 +188,100 @@
             const ctx = canvas.getContext("2d");
 
             let isDragging = false;
-            
             let startY = 0;
-            let currentTransformY = 0;
             const screenHeight = window.innerHeight;
             const triggerDistance = screenHeight * 0.45; 
 
-            // --- GÜNE HAREKET MEKANZMASI (DOKUNMATK KLTLENMEY ÖNLEYEN YAPI) ---
             const onStart = (e) => {
                 isDragging = true;
                 startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-                sun.style.transition = 'none';
             };
 
             const onMove = (e) => {
                 if (!isDragging) return;
-                
-                const currentClientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-                const deltaY = startY - currentClientY;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                const deltaY = startY - clientY;
 
                 if (deltaY > 0) { 
-                    currentTransformY = -deltaY;
-                    sun.style.transform = `translateY(${currentTransformY}px)`;
-
-                    // Gerçekçi Atmosferik afak Simülasyonu
+                    sun.style.transform = `translateY(${-deltaY}px)`;
                     let pct = Math.min(deltaY / triggerDistance, 1);
-                    
-                    // Gökyüzü üst ve alt katman yumuak geçi hesaplamalar
-                    let r = Math.round(6 + (210 * pct));
-                    let g = Math.round(9 + (120 * pct));
-                    let b = Math.round(19 + (70 * pct));
-                    
-                    document.body.style.background = `linear-gradient(to bottom, rgb(${r}, ${g}, ${b}), rgb(${Math.round(22+(210*pct))}, ${Math.round(27+(70*pct))}, ${Math.round(51-(10*pct))}))`;
+                    document.body.style.background = `linear-gradient(to bottom, rgb(${Math.round(6+(210*pct))}, ${Math.round(9+(120*pct))}, ${Math.round(19+(70*pct))}), rgb(${Math.round(22+(210*pct))}, ${Math.round(27+(70*pct))}, ${Math.round(51-(10*pct))}))`;
                     glow.style.background = `radial-gradient(circle at 50% 90%, rgba(255, 120, 30, ${pct * 0.8}), rgba(255, 65, 0, 0) 70%)`;
 
                     if (deltaY >= triggerDistance) {
-                        endDragProcess(true);
+                        isDragging = false;
+                        sun.style.transition = 'opacity 0.3s';
+                        sun.style.opacity = '0';
+                        setTimeout(initScratchPhase, 400);
                     }
                 }
             };
 
             const onEnd = () => {
                 if (!isDragging) return;
-                endDragProcess(false);
-            };
-
-            const endDragProcess = (isComplete) => {
                 isDragging = false;
-                if (isComplete) {
-                    sun.style.transition = 'transform 0.5s ease-out, opacity 0.3s';
-                    sun.style.transform = `translateY(-${screenHeight}px)`;
-                    sun.style.opacity = '0';
-                    
-                    setTimeout(initScratchPhase, 400);
-                } else {
-                    sun.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                    sun.style.transform = 'translateY(0px)';
-                    document.body.style.background = 'linear-gradient(to bottom, var(--sky-1), var(--sky-2))';
-                    glow.style.background = 'none';
-                }
+                sun.style.transition = 'transform 0.5s ease';
+                sun.style.transform = 'translateY(0px)';
+                document.body.style.background = 'linear-gradient(to bottom, #060913, #161b33)';
             };
 
-            // Global event tanmlamalar ile kaydrma kaçrmalarn engelleme
             sun.addEventListener('mousedown', onStart);
             window.addEventListener('mousemove', onMove);
             window.addEventListener('mouseup', onEnd);
-
             sun.addEventListener('touchstart', onStart);
             window.addEventListener('touchmove', onMove);
             window.addEventListener('touchend', onEnd);
 
-
-            // --- KAZI KAZAN SSTEM (EKSKSZ CODESET) ---
             const initScratchPhase = () => {
                 sceneSunrise.classList.add('hidden');
-                
-                // Gün doumu sonras romantik pembe/mavi gökyüzü krlmas
                 document.body.style.background = 'linear-gradient(to bottom, #ff9a9e 0%, #fecfef 100%)';
                 glow.style.background = 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.4), transparent)';
-                
-                speechBubble.textContent = "Harika! Güne dodu. imdi kartn üzerindeki buuyu parmanla tamamen sil bakalm.";
+                speechBubble.textContent = "Harika! GÃ¼neÅŸ doÄŸdu. Åimdi kartÄ±n Ã¼zerindeki buÄŸuyu parmaÄŸÄ±nla tamamen sil bakalÄ±m.";
                 sceneScratch.classList.add('active');
                 
-                // Canvas netlik ve boyut senkronizasyonu
                 canvas.width = canvas.offsetWidth;
                 canvas.height = canvas.offsetHeight;
-
-                // Estetik buzlu afak gümüü kaplamas
                 let silverGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 silverGrad.addColorStop(0, '#cfd8dc');
                 silverGrad.addColorStop(0.5, '#eceff1');
                 silverGrad.addColorStop(1, '#b0bec5');
-                
                 ctx.fillStyle = silverGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Tipografi ayarlar
                 ctx.font = "bold 19px sans-serif";
                 ctx.fillStyle = "#607d8b";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                ctx.fillText("Buray Kaz ", canvas.width / 2, canvas.height / 2);
+                ctx.fillText("BurayÄ± KazÄ± âœ¨", canvas.width / 2, canvas.height / 2);
             };
 
             let drawing = false;
-
-            const startScratch = (e) => {
-                drawing = true;
-                scratchAction(e);
-            };
-
-            const scratchAction = (e) => {
+            const scratch = (e) => {
                 if (!drawing) return;
-
                 const rect = canvas.getBoundingClientRect();
                 const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                 const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-
-                const x = clientX - rect.left;
-                const y = clientY - rect.top;
-
-                // Kazma frças maskelemesi
                 ctx.globalCompositeOperation = "destination-out";
                 ctx.beginPath();
-                ctx.arc(x, y, 25, 0, Math.PI * 2);
+                ctx.arc(clientX - rect.left, clientY - rect.top, 25, 0, Math.PI * 2);
                 ctx.fill();
 
-                checkReveal();
-            };
-
-            const stopScratch = () => { drawing = false; };
-
-            const checkReveal = () => {
                 const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 let cleared = 0;
-                for (let i = 3; i < imgData.data.length; i += 4) {
-                    if (imgData.data[i] === 0) cleared++;
-                }
-                
-                // Alann %50'den fazlas temizlendiinde kart tamamen kaldr
+                for (let i = 3; i < imgData.data.length; i += 4) if (imgData.data[i] === 0) cleared++;
                 if (cleared / (imgData.data.length / 4) > 0.50) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    speechBubble.textContent = "Günaydn! Umarm bu küçük sürpriz yüzünü güldürebilmitir. ";
+                    speechBubble.textContent = "GÃ¼naydÄ±n! UmarÄ±m bu kÃ¼Ã§Ã¼k sÃ¼rpriz yÃ¼zÃ¼nÃ¼ gÃ¼ldÃ¼rebilmiÅŸtir. ğŸ‰";
                     canvas.style.pointerEvents = 'none';
                 }
             };
 
-            canvas.addEventListener('mousedown', startStartch = startScratch);
-            window.addEventListener('mousemove', scratchAction);
-            window.addEventListener('mouseup', stopScratch);
-
-            canvas.addEventListener('touchstart', startScratch);
-            window.addEventListener('touchmove', scratchAction);
-            window.addEventListener('touchend', stopScratch);
+            canvas.addEventListener('mousedown', () => drawing = true);
+            canvas.addEventListener('mousemove', scratch);
+            window.addEventListener('mouseup', () => drawing = false);
+            canvas.addEventListener('touchstart', () => drawing = true);
+            canvas.addEventListener('touchmove', scratch);
+            canvas.addEventListener('touchend', () => drawing = false);
         });
     </script>
 </body>
 </html>
-            
